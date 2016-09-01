@@ -104,8 +104,20 @@ public class GraphAdjMatrix extends Graph {
 	 * @return List<Integer> a list of indices of vertices.  
 	 */	
 	public List<Integer> getDistance2(int v) {
-		// XXX Implement this method in week 1
-		return null;
+        List<Integer> twoHopList = new ArrayList<Integer>();
+	    for (int w = 0; w < getNumVertices(); w++) {
+	        if (adjMatrix[v][w] == 0) {
+	            // No edge found. Try next vertex.
+	            continue;
+	        }
+	        for (int u = 0; u < getNumVertices(); u++) {
+	            if (adjMatrix[w][u] != 0) {
+	                // Found a second degree edge. Add it to the hop list.
+	                twoHopList.add(u);
+	            }
+	        }
+	    }
+	    return twoHopList;
 	}
 	
 	/**

@@ -1,7 +1,9 @@
 package basicgraph;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +23,7 @@ import util.GraphLoader;
  * 
  */
 
+
 public abstract class Graph {
 
 	private int numVertices;
@@ -36,6 +39,52 @@ public abstract class Graph {
 		numEdges = 0;
 		vertexLabels = null;
 	}
+
+	/**
+	 * Helper function to generate a more detailed degree sequence list.
+	 * For testing/debugging.
+	 * @return Sorted degree sequence list with degree count.
+	 */
+    private List<Map.Entry<Integer, Integer>> degreeSequenceInt() {
+        // We abuse Map.Entry class to store the vertex and its degree.
+        List<Map.Entry<Integer, Integer>> sequence =
+                        new ArrayList<Map.Entry<Integer, Integer>>();
+
+        // Populate the result set list
+        for (int i = 0; i < numVertices; i++) {
+            sequence.add(new AbstractMap.SimpleEntry<Integer, Integer>(i, 0));
+        }
+
+        // Sort the list based upon the "total" degree of each vertex.
+        Collections.sort(sequence, new Comparator<Map.Entry<Integer, Integer>>() {
+            @Override
+            public int compare(Map.Entry<Integer, Integer> v1,
+                               Map.Entry<Integer, Integer> v2) {
+                // Calculate the sum of out and in degree.
+                int v1Degree = (getInNeighbors(v1.getKey()).size()) +
+                               (getNeighbors(v1.getKey()).size());
+
+                // Set the degree count
+                v1.setValue(v1Degree);
+
+                int v2Degree = (getInNeighbors(v2.getKey()).size()) +
+                               (getNeighbors(v2.getKey()).size());
+
+                // Set the degree count
+                v2.setValue(v2Degree);
+
+                // Compare the degrees of both the vertices
+                if (v1Degree > v2Degree) {
+                    return -1;
+                } else if (v1Degree < v2Degree) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+        });
+        return sequence;
+    }
 
 	
 	/**
@@ -111,19 +160,26 @@ public abstract class Graph {
 	 */
 	public abstract List<Integer> getInNeighbors(int v);
 	
-	
-
-	/** 
-	 * The degree sequence of a graph is a sorted (organized in numerical order 
-	 * from largest to smallest, possibly with repetitions) list of the degrees 
-	 * of the vertices in the graph.
-	 * 
-	 * @return The degree sequence of this graph.
-	 */
+   /** 
+     * The degree sequence of a graph is a sorted (organized in numerical order 
+     * from largest to smallest, possibly with repetitions) list of the degrees 
+     * of the vertices in the graph.
+     * 
+     * @return The degree sequence of this graph. This method also returns
+     *         the degree count of each vertex.
+     */
 	public List<Integer> degreeSequence() {
-		// XXX: Implement in part 1 of week 1
-		return null;
+	    // Get the detailed sorted sequence.
+	    List<Map.Entry<Integer, Integer>> sortedSequence = degreeSequenceInt();
+
+	    List<Integer> resultSet = new ArrayList<Integer>();
+	    // Extract the degree count from the tuple.
+	    for (Map.Entry<Integer, Integer> tuple: sortedSequence) {
+	        resultSet.add(tuple.getValue());
+	    }
+	    return resultSet;
 	}
+
 	
 	/**
 	 * Get all the vertices that are 2 away from the vertex in question.
@@ -229,7 +285,7 @@ public abstract class Graph {
 	
 	/** Main method provided with some basic tests.  */
 	public static void main (String[] args) {
-		GraphLoader.createIntersectionsFile("data/maps/ucsd.map", "data/intersections/ucsd.intersections");
+		GraphLoader.createIntersectionsFile("data/maps/myucsd.map", "data/intersections/myucsd.intersections");
 		
 
 		// For testing of Part 1 functionality
@@ -241,7 +297,7 @@ public abstract class Graph {
 		System.out.println("****");
 		System.out.println("Roads / intersections:");
 		GraphAdjList graphFromFile = new GraphAdjList();
-		GraphLoader.loadRoadMap("data/testdata/simpletest.map", graphFromFile);
+		GraphLoader.loadRoadMap("data/maps/ucsd.map", graphFromFile);
 		System.out.println(graphFromFile);
 		
 		System.out.println("Observe all degrees are <= 12.");
