@@ -1,37 +1,246 @@
 /**
  * @author UCSD MOOC development team and YOU
+ * This class represents a graph of geographic locations.
+ * Nodes in the graph are the intersections, and the edges are the road
+ * segments.
  * 
- * A class which reprsents a graph of geographic locations
- * Nodes in the graph are intersections between 
- *
  */
 package roadgraph;
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import geography.GeographicPoint;
 import util.GraphLoader;
 
+
 /**
- * @author UCSD MOOC development team and YOU
+ * This class defines an edge in the graph.
+ * @author nishantsuneja
+ *
+ */
+class MapEdge
+{
+    private GeographicPoint from;
+    private GeographicPoint to;
+    private String roadName;
+    private String roadType;
+    private double length;
+
+    public MapEdge(GeographicPoint from,
+                   GeographicPoint to,
+                   String roadName,
+                   String roadType,
+                   double length)
+    {
+        this.from = from;
+        this.to = to;
+        this.roadName = roadName;
+        this.roadType = roadType;
+        this.length = length;
+    }
+
+    public GeographicPoint getFrom()
+    {
+        return from;
+    }
+    public void setFrom(GeographicPoint from)
+    {
+        this.from = from;
+    }
+    public GeographicPoint getTo()
+    {
+        return to;
+    }
+    public void setTo(GeographicPoint to)
+    {
+        this.to = to;
+    }
+    public String getRoadName()
+    {
+        return roadName;
+    }
+    public void setRoadName(String roadName)
+    {
+        this.roadName = roadName;
+    }
+    public String getRoadType()
+    {
+        return roadType;
+    }
+    public void setRoadType(String roadType)
+    {
+        this.roadType = roadType;
+    }
+    public double getLength()
+    {
+        return length;
+    }
+    public void setLength(double length)
+    {
+        this.length = length;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "MapEdge [start=" + from + ", end=" + to + ", roadName="
+                + roadName + ", roadType=" + roadType + ", length=" + length
+                + "]";
+    }
+
+}
+
+
+/**
+ * This class defines a vertex in the graph. The class maintains the
+ * following:
+ * a)  List of all the outgoing edges from this vertex.
+ * b)  The geographical location of the vertex.
+ * c)  The geographical location of the parent of the vertex discovered as
+ *     we traverse the graph.  
  * 
- * A class which represents a graph of geographic locations
- * Nodes in the graph are intersections between 
+ * @author nishantsuneja
+ *
+ */
+class MapVertex
+{
+    private GeographicPoint location;
+    private GeographicPoint parentLocation;
+    private List<MapEdge> outEdges;
+
+    public MapVertex(GeographicPoint location) {
+        this.location = location;
+        this.parentLocation = null;
+        this.outEdges = new ArrayList<MapEdge>();
+    }
+
+    public GeographicPoint getLocation()
+    {
+        return location;
+    }
+    public void setLocation(GeographicPoint location)
+    {
+        this.location = location;
+    }
+    public List<MapEdge> getOutEdges()
+    {
+        return outEdges;
+    }
+    public void setOutEdges(List<MapEdge> outEdges)
+    {
+        this.outEdges = outEdges;
+    }
+
+    public GeographicPoint getParentLocation()
+    {
+        return parentLocation;
+    }
+
+    public void setParentLocation(GeographicPoint parentLocation)
+    {
+        this.parentLocation = parentLocation;
+    }
+
+    /**
+     * This method adds a neighbor to a vertex. If the same neighbor
+     * already exists, we return false. Otherwise, true.
+     * @param edge
+     * @return
+     */
+    public boolean addOutEdge(MapEdge edge) {
+        if (edge == null || outEdges.contains(edge)) {
+            // The edge already exists.
+            return false;
+        }
+
+        // Add the edge to the list
+        outEdges.add(edge);
+
+        return true;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "MapVertex [location=" + location + "]";
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        MapVertex vertex = (MapVertex)obj;
+        return location.equals(vertex.getLocation());
+    }
+
+}
+
+/**
+ * This class represents a graph of geographic locations.
+ * Nodes in the graph are the intersections, and the edges are the road
+ * segments.
+ * @author nishantsuneja
  *
  */
 public class MapGraph {
-	//TODO: Add your member variables here in WEEK 2
-	
-	
+
+    private Map<GeographicPoint, MapVertex> vertexMap;
+    private int numVertices;
+    private int numEdges;
+
+    /**
+     * This method validates the feasibility of adding an edge to the graph.
+     * @return
+     */
+    private boolean validateEdge(GeographicPoint from,
+                                 GeographicPoint to,
+                                 String roadName,
+                                 String roadType,
+                                 double length)
+    {
+        if ((from == null) || (to == null)) { // Invalid endpoints
+            return false;
+        }
+
+        // NOTE: The dataset seems to have empty road names too. So,
+        // avoiding the check for empty roadnames.
+        if (roadName == null) {
+            return false; // Invalid road name.
+        }
+
+        // NOTE: The dataset seems to have empty road types too. So,
+        // avoiding the check for empty roadtypes.
+        if (roadType == null) {
+            return false; // Invalid road type.
+        }
+
+        if (length <= 0) {  // Invalid edge length
+            return false;
+        }
+
+        if (!vertexMap.containsKey(from) || !vertexMap.containsKey(to)) {
+            return false; // One or both the endpoints are not present in the graph.
+        }
+
+        return true;
+    }
+
 	/** 
 	 * Create a new empty MapGraph 
 	 */
 	public MapGraph()
 	{
-		// TODO: Implement in this constructor in WEEK 2
+		vertexMap = new HashMap<GeographicPoint, MapVertex>();
+		numVertices = 0;
+		numEdges = 0;
 	}
 	
 	/**
@@ -40,8 +249,7 @@ public class MapGraph {
 	 */
 	public int getNumVertices()
 	{
-		//TODO: Implement this method in WEEK 2
-		return 0;
+	    return numVertices;
 	}
 	
 	/**
@@ -50,8 +258,7 @@ public class MapGraph {
 	 */
 	public Set<GeographicPoint> getVertices()
 	{
-		//TODO: Implement this method in WEEK 2
-		return null;
+        return vertexMap.keySet();
 	}
 	
 	/**
@@ -60,13 +267,10 @@ public class MapGraph {
 	 */
 	public int getNumEdges()
 	{
-		//TODO: Implement this method in WEEK 2
-		return 0;
+        return numEdges;
 	}
 
-	
-	
-	/** Add a node corresponding to an intersection at a Geographic Point
+	/**Add a node corresponding to an intersection at a Geographic Point
 	 * If the location is already in the graph or null, this method does 
 	 * not change the graph.
 	 * @param location  The location of the intersection
@@ -75,8 +279,20 @@ public class MapGraph {
 	 */
 	public boolean addVertex(GeographicPoint location)
 	{
-		// TODO: Implement this method in WEEK 2
-		return false;
+	    if (location == null || vertexMap.containsKey(location)) {
+	        return false;
+	    }
+
+	    // Initialize the vertex node.
+	    MapVertex vertex = new MapVertex(location);
+
+	    // Insert the new node into the vertex map.
+	    vertexMap.put(location, vertex);
+
+	    // Bump up the vertex count
+	    numVertices++;
+
+	    return true;
 	}
 	
 	/**
@@ -94,8 +310,24 @@ public class MapGraph {
 	public void addEdge(GeographicPoint from, GeographicPoint to, String roadName,
 			String roadType, double length) throws IllegalArgumentException {
 
-		//TODO: Implement this method in WEEK 2
-		
+	    if (!validateEdge(from, to, roadName, roadType, length)) {
+	        throw new IllegalArgumentException("Invalid parameters while"
+	                                   + " adding an edge to the graph.");
+	    }
+
+	    // First, lets create a directed edge between the 2 endpoints.
+	    MapEdge edge = new MapEdge(from, to, roadName, roadType, length);
+
+	    // Extract the start endpoint from the vertex map
+	    MapVertex fromVertex = vertexMap.get(from);
+	    assert(fromVertex != null);
+
+	    // Hang the edge off the vertex
+	    if (fromVertex.addOutEdge(edge)) {
+	        // We successfully added an edge of the start endpoint. Bump
+	        // up the edge count.
+	        numEdges++;
+	    }
 	}
 	
 
@@ -123,12 +355,78 @@ public class MapGraph {
 	public List<GeographicPoint> bfs(GeographicPoint start, 
 			 					     GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		// TODO: Implement this method in WEEK 2
-		
-		// Hook for visualization.  See writeup.
-		//nodeSearched.accept(next.getLocation());
+	    Queue<MapVertex> bfsQueue = new LinkedList<MapVertex>();
+	    Set<GeographicPoint> visitedSet = new HashSet<GeographicPoint>();
+	    List<GeographicPoint> path = new LinkedList<GeographicPoint>();
+	    MapVertex startVertex;
+	    MapVertex endVertex;
+	    MapVertex vertex; 
 
-		return null;
+	    // Ensure that the start and end points are present in the graph.
+	    if (!vertexMap.containsKey(start)) {
+	        return null;
+	    }
+	    startVertex = vertexMap.get(start);
+
+	    if (!vertexMap.containsKey(goal)) {
+	        return null;
+	    }
+	    endVertex = vertexMap.get(goal);
+
+	    // Begin with the source.
+	    vertex = startVertex;
+	    bfsQueue.add(vertex);
+
+	    /*
+	     * Move breath wise through the graph till we encounter the
+	     * goal vertex.
+	     */
+	    while (!bfsQueue.isEmpty()) {
+	        vertex = bfsQueue.remove();
+	        nodeSearched.accept(vertex.getLocation());
+            visitedSet.add(vertex.getLocation()); // Mark the vertex as visited.
+
+	        // Check if we reached our goal.
+	        if (vertex.getLocation().equals(goal)) {
+	            break;
+	        }
+
+	        /*
+	         * Iterate over all the edges of the most recently
+	         * dequeued vertex.
+	         */
+	        for (MapEdge edge: vertex.getOutEdges()) {
+	            // Iterate over the neighboring vertex only if we didn't
+	            // already visit it.
+	            if (!visitedSet.contains(edge.getTo())) {
+	                MapVertex neighbor = vertexMap.get(edge.getTo());
+	                assert(neighbor != null);
+
+	                // Enqueue the newly discovered vertex.
+	                bfsQueue.add(neighbor);
+	                // Maintain the parent child relationship
+	                neighbor.setParentLocation(vertex.getLocation());
+	            }
+	        }
+	    }
+
+	    // If no path is found, return null.
+	    if (!vertex.equals(endVertex)) { // Path not found.
+	        return null;
+	    }
+
+	    // Calculate the path.
+	    assert(vertex.equals(endVertex)); // Safety check.
+	    while (vertex.getParentLocation() != null) {
+	        path.add(0, vertex.getLocation()); // Append to the beginning of the list.
+	        vertex = vertexMap.get(vertex.getParentLocation());
+	    }
+	
+	    // We reached the start point.
+	    assert(vertex.equals(startVertex));
+	    path.add(0, startVertex.getLocation());
+	
+		return path;
 	}
 	
 
