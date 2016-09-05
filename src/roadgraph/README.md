@@ -2,7 +2,7 @@ Class: MapGraph
 
 Modifications made to MapGraph (what and why):
 
-a) Introduced a Hashmap to maintain the mapping between the geographical
+a) Introduced a map to maintain the mapping between the geographical
    location of an intersection, to our internal mapping of the vertex
    (MapVertex class), as described below. This helps in 0(1) lookup of
    the MapVertex class, given its geographical location.
